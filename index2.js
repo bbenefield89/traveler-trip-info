@@ -27,65 +27,60 @@ const setLegs = ({ airlineCode, flightNumber, airlineName, air }) => ({
 })
 
 async function getTravelersFlightInfo() {
-  try {
-    const { profiles } = await profilesAPI.get()
-    const { trip: { flights } } = await tripsAPI.get()
-    const { airlines } = await airlinesAPI.get()
-    const travelers = { travelers: [] }
-  
-    const airlinesHash = setAirlineHash(airlines)
+  const { profiles } = await profilesAPI.get()
+  const { trip: { flights } } = await tripsAPI.get()
+  const { airlines } = await airlinesAPI.get()
+  const travelers = { travelers: [] }
 
-    let currentTraveler = {}
-    let legs = []
-    let iP = 0
-    let iF = 0
-    let iTID = 0 
-    let iL = 0
-    while (iP < profiles.length) {
-      if (!currentTraveler.id) {
-        currentTraveler = setTraveler(profiles, iP)
-      }
+  const airlinesHash = setAirlineHash(airlines)
 
-      if (flights[ iF ].travelerIds[ iTID ] === currentTraveler.id) {
-        const { airlineCode, flightNumber, } = flights[ iF ].legs[ iL ]
-        const { air } = profiles[ iP ].rewardPrograms
-        const airlineName = airlinesHash[ airlineCode ]
-        const data = setLegs({ airlineCode, flightNumber, airlineName, air })
-        
-        legs.push(data)
+  let currentTraveler = {}
+  let legs = []
+  let iP = 0
+  let iF = 0
+  let iTID = 0 
+  let iL = 0
+  while (iP < profiles.length) {
+    if (!currentTraveler.id) {
+      currentTraveler = setTraveler(profiles, iP)
+    }
 
-        // increase iF and reset IL if at the end of legs
-        if (++iL >= flights[ iF ].legs.length) {
-          currentTraveler.flights.push({ legs })
-          legs = []
+    if (flights[ iF ].travelerIds[ iTID ] === currentTraveler.id) {
+      const { airlineCode, flightNumber, } = flights[ iF ].legs[ iL ]
+      const { air } = profiles[ iP ].rewardPrograms
+      const airlineName = airlinesHash[ airlineCode ]
+      const data = setLegs({ airlineCode, flightNumber, airlineName, air })
+      
+      legs.push(data)
 
-          // move to the next profile when we hit the end of flights
-          if (++iF >= flights.length) {
-            travelers.travelers.push(currentTraveler)
-            currentTraveler = {}
-            iF = 0
-            iP++
-            iTID++
-          }
-          
-          iL = 0
-        }
-      }
-      else {
+      // increase iF and reset IL if at the end of legs
+      if (++iL >= flights[ iF ].legs.length) {
+        currentTraveler.flights.push({ legs })
+        legs = []
+
+        // move to the next profile when we hit the end of flights
         if (++iF >= flights.length) {
           travelers.travelers.push(currentTraveler)
           currentTraveler = {}
           iF = 0
           iP++
+          iTID++
         }
+        
+        iL = 0
       }
     }
+    else {
+      if (++iF >= flights.length) {
+        travelers.travelers.push(currentTraveler)
+        currentTraveler = {}
+        iF = 0
+        iP++
+      }
+    }
+  }
 
-    console.log(JSON.stringify(travelers, null, 2))
-  }
-  catch (err) {
-    console.log(err)
-  }
+  console.log(JSON.stringify(travelers, null, 2))
 }
 
 console.log(getTravelersFlightInfo())
